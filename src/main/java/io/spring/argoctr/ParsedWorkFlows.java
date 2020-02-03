@@ -34,7 +34,6 @@ import org.springframework.cloud.dataflow.core.ApplicationType;
 import org.springframework.cloud.dataflow.core.dsl.ArgumentNode;
 import org.springframework.cloud.dataflow.core.dsl.FlowNode;
 import org.springframework.cloud.dataflow.core.dsl.LabelledTaskNode;
-import org.springframework.cloud.dataflow.core.dsl.TaskApp;
 import org.springframework.cloud.dataflow.core.dsl.TaskAppNode;
 import org.springframework.cloud.dataflow.core.dsl.TaskParser;
 import org.springframework.cloud.dataflow.registry.service.AppRegistryService;
@@ -73,20 +72,16 @@ public class ParsedWorkFlows {
 		ComposedRunnerVisitor composedRunnerVisitor = new ComposedRunnerVisitor();
 
 		TaskParser taskParser = new TaskParser("composed-task-runner",
-				dsl,true,true);
+				dsl, true, true);
 		taskParser.parse().accept(composedRunnerVisitor);
 
 		this.visitorDeque = composedRunnerVisitor.getFlow();
-		this.visitorDeque.stream().forEach(node -> {
-			System.out.println(node);
-			System.out.println(node.getLabel());
-		});
 
 		this.executionDeque.stream().forEach(node -> System.out.println(node));
 
 		templates.add(dagBuilder(dsl));
 
-		while(!this.containerQueue.isEmpty()) {
+		while (!this.containerQueue.isEmpty()) {
 			templates.add(this.containerQueue.pop());
 		}
 
@@ -97,11 +92,10 @@ public class ParsedWorkFlows {
 		ComposedRunnerVisitor composedRunnerVisitor = new ComposedRunnerVisitor();
 
 		TaskParser taskParser = new TaskParser("composed-task-runner",
-				dsl,true,true);
+				dsl, true, true);
 		taskParser.parse().accept(composedRunnerVisitor);
 
 		this.visitorDeque = composedRunnerVisitor.getFlow();
-		System.out.println(">>>>>>");
 		Template template = new Template();
 		DAGTemplate dagTemplate = createFlow();
 		template.setName("composed-task");
@@ -117,36 +111,16 @@ public class ParsedWorkFlows {
 				break;
 			}
 			if (this.visitorDeque.peek().isTaskApp()) {
-				TaskAppNode taskNode = (TaskAppNode) this.visitorDeque.pop();
-				for(ArgumentNode argument : taskNode.getArguments()) {
-					System.out.println(argument.toString());
-				}
-				DAGTask dagTask = new DAGTask();
-				LabelledTaskNode dependencyNode= this.visitorDeque.peek();
-				List<String> dependencies = null;
-				if (!(dependencyNode.getLabel() == null && dependencyNode instanceof FlowNode) &&  !getIdentifier(dependencyNode).equals(getIdentifier(taskNode))) {
-					dependencies = new ArrayList<>(1);
-					dependencies.add(getIdentifier(dependencyNode));
-				}
-				dagTask.setDependencies(dependencies);
-				dagTask.setName(getIdentifier(taskNode));
-				String containerTaskName = null;
-				if(this.containerTemplateNameIndex.containsKey(taskNode.getName())) {
-					Integer index = this.containerTemplateNameIndex.get(taskNode.getName());
-					containerTaskName = taskNode.getName() + index;
-					index++;
-					this.containerTemplateNameIndex.put(taskNode.getName(), index);
+				TaskAppNode taskAppNode = (TaskAppNode) this.visitorDeque.pop();
+				if (taskAppNode.hasTransitions()) {
+					//handle transitions
 				}
 				else {
-					this.containerTemplateNameIndex.put(taskNode.getName(), 0);
-					containerTaskName = taskNode.getName();
+					handleTaskAppFlow(taskAppNode);
 				}
-				dagTask.setTemplate(containerTaskName);
-				this.executionDeque.push(dagTask);
-				this.containerQueue.push(getContainerTemplateForNode(taskNode, dagTask.getTemplate()));
 			}
 		}
-		while(!this.executionDeque.isEmpty()) {
+		while (!this.executionDeque.isEmpty()) {
 			dagTemplate.getTasks().add(this.executionDeque.pop());
 		}
 		return dagTemplate;
@@ -158,7 +132,7 @@ public class ParsedWorkFlows {
 		V1Container container = new V1Container();
 		AppRegistration appRegistration = this.appRegistryService.find(taskAppNode.getName(), ApplicationType.task);
 		String uri = appRegistration.getUri().toString();
-		uri = uri.substring(uri.indexOf(":")+1);
+		uri = uri.substring(uri.indexOf(":") + 1);
 		container.setImage(uri);
 
 		List<String> argsList = null;
@@ -176,9 +150,35 @@ public class ParsedWorkFlows {
 	}
 
 	private String getIdentifier(LabelledTaskNode labelledTaskNode) {
-		if(labelledTaskNode.getLabel() == null && labelledTaskNode instanceof TaskAppNode) {
-			return ((TaskAppNode)labelledTaskNode).getName();
+		if (labelledTaskNode.getLabel() == null && labelledTaskNode instanceof TaskAppNode) {
+			return ((TaskAppNode) labelledTaskNode).getName();
 		}
-		return (labelledTaskNode.getLabel()==null)?null:labelledTaskNode.getLabel().stringValue();
+		return (labelledTaskNode.getLabel() == null) ? null : labelledTaskNode.getLabel().stringValue();
+	}
+
+	private void handleTaskAppFlow(TaskAppNode taskAppNode) {
+		DAGTask dagTask = new DAGTask();
+		LabelledTaskNode dependencyNode = this.visitorDeque.peek();
+		List<String> dependencies = null;
+		if (!(dependencyNode.getLabel() == null && dependencyNode instanceof FlowNode) && !getIdentifier(dependencyNode).equals(getIdentifier(taskAppNode))) {
+			dependencies = new ArrayList<>(1);
+			dependencies.add(getIdentifier(dependencyNode));
+		}
+		dagTask.setDependencies(dependencies);
+		dagTask.setName(getIdentifier(taskAppNode));
+		String containerTaskName = null;
+		if (this.containerTemplateNameIndex.containsKey(taskAppNode.getName())) {
+			Integer index = this.containerTemplateNameIndex.get(taskAppNode.getName());
+			containerTaskName = taskAppNode.getName() + index;
+			index++;
+			this.containerTemplateNameIndex.put(taskAppNode.getName(), index);
+		}
+		else {
+			this.containerTemplateNameIndex.put(taskAppNode.getName(), 0);
+			containerTaskName = taskAppNode.getName();
+		}
+		dagTask.setTemplate(containerTaskName);
+		this.executionDeque.push(dagTask);
+		this.containerQueue.push(getContainerTemplateForNode(taskAppNode, dagTask.getTemplate()));
 	}
 }
