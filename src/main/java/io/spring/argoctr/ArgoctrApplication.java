@@ -54,19 +54,32 @@ public class ArgoctrApplication {
 		return new ApplicationRunner() {
 			@Override
 			public void run(ApplicationArguments args) throws Exception {
-				launchParsedFlows();
-//				launchFixedWorkFlow();
+				//
+				launchFixedWorkFlow();
 				System.exit(0);
 			}
 		};
 	}
 
+
+	private void quickDSLDemo() throws Exception{
+		//Workflow workflow = parsedWorkFlows.parseWorkFlow("sequenceargoflow", "A: timestamp --foo=bar && B: timestamp --baz=boo --bar=graph && C: timestamp");
+		//Workflow workflow = parsedWorkFlows.parseWorkFlow("sequenceargoflow", "A: timestamp --foo=bar --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://<yoururl>:3306/mysql --spring.datasource.username=root && B: timestamp --baz=boo --bar=graph --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://<yoururl>:3306/mysql --spring.datasource.username=root && C: timestamp --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://<your url>:3306/mysql --spring.datasource.username=root");
+		//Workflow workflow = parsedWorkFlows.parseWorkFlow("sequencetransition", "R: timestamp && A: argo-task 'FAILED' -> B: argo-task 'COMPLETED' -> C: timestamp");
+		Workflow workflow = parsedWorkFlows.parseWorkFlow("singletask", "timestamp --foo=bar --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://<yoururl>:3306/mysql --spring.datasource.username=root ");
+		ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+		mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+		System.out.println(this.fixedWorkFlows.submitRequest(workflow));
+	}
+
 	private void launchParsedFlows() throws Exception{
 		//Workflow workflow = parsedWorkFlows.parseWorkFlow("sequenceargoflow", "A: timestamp --foo=bar && B: timestamp --baz=boo --bar=graph && C: timestamp");
-		//Workflow workflow = parsedWorkFlows.parseWorkFlow("sequenceargoflow", "A: timestamp --foo=bar --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://10.111.140.239:3306/mysql --spring.datasource.username=root && B: timestamp --baz=boo --bar=graph --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://10.111.140.239:3306/mysql --spring.datasource.username=root && C: timestamp --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://10.111.140.239:3306/mysql --spring.datasource.username=root");
-		Workflow workflow = parsedWorkFlows.parseWorkFlow("sequenceargoflownolabel", "timestamp --foo=bar --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://10.111.140.239:3306/mysql --spring.datasource.username=root && B: timestamp --baz=boo --bar=graph --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://10.111.140.239:3306/mysql --spring.datasource.username=root && C: timestamp --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://10.111.140.239:3306/mysql --spring.datasource.username=root");
-		//Workflow workflow = parsedWorkFlows.parseWorkFlow("directedgraph", "A: argo-task 'FAILED' -> B: argo-task 'COMPLETED' -> C: timestamp");
-		//Workflow workflow = parsedWorkFlows.parseWorkFlow("singletask", "timestamp --foo=bar --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://10.111.140.239:3306/mysql --spring.datasource.username=root ");
+		//Workflow workflow = parsedWorkFlows.parseWorkFlow("sequenceargoflow", "A: timestamp --foo=bar --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://<your url>:3306/mysql --spring.datasource.username=root && B: timestamp --baz=boo --bar=graph --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://<your url>:3306/mysql --spring.datasource.username=root && C: timestamp --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://<your url>:3306/mysql --spring.datasource.username=root");
+		Workflow workflow = parsedWorkFlows.parseWorkFlow("sequenceargoflownolabel", "timestamp --foo=bar --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://<your url>:3306/mysql --spring.datasource.username=root && B: timestamp --baz=boo --bar=graph --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://<your url>:3306/mysql --spring.datasource.username=root && C: timestamp --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://<your url>:3306/mysql --spring.datasource.username=root");
+//		Workflow workflow = parsedWorkFlows.parseWorkFlow("transition", "A: argo-task 'FAILED' -> B: argo-task 'COMPLETED' -> C: timestamp");
+//		Workflow workflow = parsedWorkFlows.parseWorkFlow("sequencetransition", "R: timestamp && A: argo-task 'FAILED' -> B: argo-task 'COMPLETED' -> C: timestamp");
+		// eeek Workflow workflow = parsedWorkFlows.parseWorkFlow("transitionwildcard", "A: argo-task 'FAILED' -> B: argo-task 'COMPLETED' -> C: timestamp '*'  -> D: timestamp");
+		//Workflow workflow = parsedWorkFlows.parseWorkFlow("singletask", "timestamp --foo=bar --spring.datasource.driverClassName=org.mariadb.jdbc.Driver --spring.datasource.password=yourpassword --spring.datasource.url=jdbc:mysql://<your url>:3306/mysql --spring.datasource.username=root ");
 		ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 		mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 		System.out.println(mapper.writeValueAsString(workflow));
@@ -75,14 +88,14 @@ public class ArgoctrApplication {
 
 	private void launchFixedWorkFlow() throws Exception{
 		//Workflow workflow = submitTask();
-		Workflow workflow = this.fixedWorkFlows.submitSequence();
-		//Workflow workflow = fixedWorkFlows.submitSplit();
+//		Workflow workflow = this.fixedWorkFlows.submitSequence();
+		Workflow workflow = fixedWorkFlows.submitSplit();
 		//Workflow workflow = fixedWorkFlows.submitFailedSequence();//submitTask();
-//		Workflow workflow = this.fixedWorkFlows.submitConditional();
+		//Workflow workflow = this.fixedWorkFlows.submitConditional();
 		ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 		mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 		System.out.println(mapper.writeValueAsString(workflow));
-		System.out.println(this.fixedWorkFlows.submitRequest(workflow));
+		//System.out.println(this.fixedWorkFlows.submitRequest(workflow));
 	}
 
 }

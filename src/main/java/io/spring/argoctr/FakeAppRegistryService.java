@@ -37,7 +37,7 @@ public class FakeAppRegistryService implements AppRegistryService {
 		registrations.put("timestamp", appRegistration);
 		appRegistration = new AppRegistration();
 		appRegistration.setName("argo-task");
-		appRegistration.setUri(new URI("docker:cppwfs/argotask"));
+		appRegistration.setUri(new URI("docker:cppwfs/argotask:1.0.0.BUILD-SNAPSHOT"));
 		registrations.put("argo-task", appRegistration);
 	}
 

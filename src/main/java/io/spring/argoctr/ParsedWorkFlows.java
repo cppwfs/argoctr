@@ -17,6 +17,7 @@
 package io.spring.argoctr;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -26,7 +27,10 @@ import java.util.Map;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.spring.argoctr.domain.DAGTask;
 import io.spring.argoctr.domain.DAGTemplate;
+import io.spring.argoctr.domain.Outputs;
+import io.spring.argoctr.domain.Parameter;
 import io.spring.argoctr.domain.Template;
+import io.spring.argoctr.domain.ValueFrom;
 import io.spring.argoctr.domain.Workflow;
 
 import org.springframework.cloud.dataflow.core.AppRegistration;
@@ -36,6 +40,7 @@ import org.springframework.cloud.dataflow.core.dsl.FlowNode;
 import org.springframework.cloud.dataflow.core.dsl.LabelledTaskNode;
 import org.springframework.cloud.dataflow.core.dsl.TaskAppNode;
 import org.springframework.cloud.dataflow.core.dsl.TaskParser;
+import org.springframework.cloud.dataflow.core.dsl.TransitionNode;
 import org.springframework.cloud.dataflow.registry.service.AppRegistryService;
 
 public class ParsedWorkFlows {
@@ -76,6 +81,9 @@ public class ParsedWorkFlows {
 		taskParser.parse().accept(composedRunnerVisitor);
 
 		this.visitorDeque = composedRunnerVisitor.getFlow();
+		for(LabelledTaskNode node : this.visitorDeque) {
+			System.out.println(node);
+		}
 
 		this.executionDeque.stream().forEach(node -> System.out.println(node));
 
@@ -113,7 +121,7 @@ public class ParsedWorkFlows {
 			if (this.visitorDeque.peek().isTaskApp()) {
 				TaskAppNode taskAppNode = (TaskAppNode) this.visitorDeque.pop();
 				if (taskAppNode.hasTransitions()) {
-					//handle transitions
+					handleTransition(taskAppNode);
 				}
 				else {
 					handleTaskAppFlow(taskAppNode);
@@ -166,7 +174,69 @@ public class ParsedWorkFlows {
 		}
 		dagTask.setDependencies(dependencies);
 		dagTask.setName(getIdentifier(taskAppNode));
-		String containerTaskName = null;
+		dagTask.setTemplate(getContainerNameWithIndex(taskAppNode));
+		this.executionDeque.push(dagTask);
+		this.containerQueue.push(getContainerTemplateForNode(taskAppNode, dagTask.getTemplate()));
+	}
+
+	private void handleTransition(TaskAppNode taskAppNode) {
+		String targetParamName = "argo-task-param";
+		boolean wildCardPresent = false;
+		handleTaskAppFlow(taskAppNode);
+		Outputs containerTemplateOutputs = new Outputs();
+		Parameter parameter = new Parameter();
+		parameter.setName(targetParamName);
+		containerTemplateOutputs.setParameters(Collections.singletonList(parameter));
+		ValueFrom valueFrom = new ValueFrom();
+		valueFrom.setPath("/tmp/hello_world.txt");
+		parameter.setValueFrom(valueFrom);
+		this.containerQueue.peek().setOutputs(containerTemplateOutputs);
+
+		for (TransitionNode transitionNode : taskAppNode.getTransitions()) {
+
+			wildCardPresent = transitionNode.getStatusToCheck().equals(WILD_CARD);
+			DAGTask dagTask = new DAGTask();
+			List<String> dependencies = null;
+			LabelledTaskNode dependencyNode = taskAppNode;
+			if(!wildCardPresent) {
+				dependencies = new ArrayList<>(1);
+				dependencies.add(getIdentifier(dependencyNode));
+				dagTask.setDependencies(dependencies);
+			}
+			dagTask.setName(getIdentifier(transitionNode.getTargetApp()));
+			String templateName = getContainerNameWithIndex(transitionNode.getTargetApp());
+			dagTask.setTemplate(templateName);
+			if(!wildCardPresent) {
+				dagTask.setWhen("{{tasks." + getIdentifier(taskAppNode) + ".outputs.parameters." +
+						targetParamName + "}} == " + transitionNode.getStatusToCheck());
+			}
+			this.executionDeque.add(dagTask);
+
+			//Setup Container Template for transition
+			Template containerTemplate = getContainerTemplateForNode(transitionNode.getTargetApp(), dagTask.getTemplate());
+			containerTemplate.setName(templateName);
+			this.containerQueue.push(containerTemplate);
+
+		}
+
+//		if (wildCardPresent && !this.executionDeque.isEmpty()) {
+//			throw new IllegalStateException(
+//					"Invalid flow following '*' specifier.");
+//		}
+//		else {
+			//if there are nodes are in the execution Deque.  Make sure that
+			//they are processed as a target of the wildcard instead of the
+			//whole transition.
+//			if (!resultFlowDeque.isEmpty()) {
+//				builder.on(WILD_CARD).to(handleFlowForSegment(resultFlowDeque)).from(currentStep);
+//			}
+//		}
+
+//		resultFlowDeque.push(builder.end());
+	}
+
+	private String getContainerNameWithIndex(TaskAppNode taskAppNode) {
+		String containerTaskName;
 		if (this.containerTemplateNameIndex.containsKey(taskAppNode.getName())) {
 			Integer index = this.containerTemplateNameIndex.get(taskAppNode.getName());
 			containerTaskName = taskAppNode.getName() + index;
@@ -177,8 +247,6 @@ public class ParsedWorkFlows {
 			this.containerTemplateNameIndex.put(taskAppNode.getName(), 0);
 			containerTaskName = taskAppNode.getName();
 		}
-		dagTask.setTemplate(containerTaskName);
-		this.executionDeque.push(dagTask);
-		this.containerQueue.push(getContainerTemplateForNode(taskAppNode, dagTask.getTemplate()));
+		return containerTaskName;
 	}
 }
