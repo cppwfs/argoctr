@@ -1,0 +1,24 @@
+= CTR Argo Demo
+
+A basic boot application that generates the Argo yam for a CTR and then launches the associated yaml.
+
+Code is still in exploration phase (and thus really dirty).
+And with that it currently only supports:
+
+* Conditional Executions
+* Transitions
+
+== Building
+
+```
+./mvnw clean package
+```
+
+== Executing
+
+This is currently run as a series of hard coded composed tasks, just for exercising the various aspects of Argo.
+Uncomment the line you wish to execute from the `quickDSLDemo` method in the `ArgoctrApplication`.
+
+```
+java -jar target/argoctr-0.0.1-SNAPSHOT.jar
+```

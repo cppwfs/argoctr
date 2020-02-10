@@ -54,8 +54,7 @@ public class ArgoctrApplication {
 		return new ApplicationRunner() {
 			@Override
 			public void run(ApplicationArguments args) throws Exception {
-				//
-				launchFixedWorkFlow();
+				quickDSLDemo();
 				System.exit(0);
 			}
 		};
