@@ -1,9 +1,9 @@
 = CTR Argo Demo
 
-A basic boot application that generates the Argo yam for a CTR and then launches the associated yaml.
+A basic boot application that generates and launches the Argo yaml for a composed task DSL.   The DSL is based on the one used by Spring Cloud Data Flow.
 
 Code is still in exploration phase (and thus really dirty).
-And with that it currently only supports:
+Currently supports the following structures:
 
 * Conditional Executions
 * Transitions
@@ -15,9 +15,8 @@ And with that it currently only supports:
 ```
 
 == Executing
-
-This is currently run as a series of hard coded composed tasks, just for exercising the various aspects of Argo.
-Uncomment the line you wish to execute from the `quickDSLDemo` method in the `ArgoctrApplication`.
+Currently the application just for exercising the various aspects of Argo.
+Uncomment the line you wish to execute from the `quickDSLDemo` method in the `ArgoctrApplication` class.
 
 ```
 java -jar target/argoctr-0.0.1-SNAPSHOT.jar
