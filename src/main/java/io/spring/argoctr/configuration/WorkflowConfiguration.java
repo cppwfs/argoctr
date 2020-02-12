@@ -18,7 +18,7 @@ package io.spring.argoctr.configuration;
 
 import io.spring.argoctr.ComposedTaskApplicationRunner;
 import io.spring.argoctr.ComposedTaskProperties;
-import io.spring.argoctr.FakeAppRegistryService;
+import io.spring.argoctr.SimpleRegistryService;
 import io.spring.argoctr.ParsedWorkFlows;
 
 import org.springframework.cloud.dataflow.registry.service.AppRegistryService;
@@ -31,7 +31,7 @@ public class WorkflowConfiguration {
 
 	@Bean
 	public AppRegistryService fakeAppRegistryService() throws Exception{
-		return new FakeAppRegistryService();
+		return new SimpleRegistryService();
 	}
 
 	@Bean

@@ -218,21 +218,6 @@ public class ParsedWorkFlows {
 			this.containerQueue.push(containerTemplate);
 
 		}
-
-//		if (wildCardPresent && !this.executionDeque.isEmpty()) {
-//			throw new IllegalStateException(
-//					"Invalid flow following '*' specifier.");
-//		}
-//		else {
-			//if there are nodes are in the execution Deque.  Make sure that
-			//they are processed as a target of the wildcard instead of the
-			//whole transition.
-//			if (!resultFlowDeque.isEmpty()) {
-//				builder.on(WILD_CARD).to(handleFlowForSegment(resultFlowDeque)).from(currentStep);
-//			}
-//		}
-
-//		resultFlowDeque.push(builder.end());
 	}
 
 	private String getContainerNameWithIndex(TaskAppNode taskAppNode) {

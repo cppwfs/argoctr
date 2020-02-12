@@ -59,10 +59,12 @@ public class ComposedTaskApplicationRunner implements ApplicationRunner {
 		ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 		mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 		System.out.println(mapper.writeValueAsString(workflow));
-		submitRequest(workflow);
+		if(properties.isDeployWorkflow()) {
+			deployWorkflow(workflow);
+		}
 	}
 
-	public Object submitRequest(Workflow workflow) throws Exception{
+	public Object deployWorkflow(Workflow workflow) throws Exception{
 		ApiClient client = Config.defaultClient();
 		client.setDebugging(true);
 		Configuration.setDefaultApiClient(client);

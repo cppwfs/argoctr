@@ -28,9 +28,9 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-public class FakeAppRegistryService implements AppRegistryService {
+public class SimpleRegistryService implements AppRegistryService {
 	private Map<String, AppRegistration> registrations = new HashMap<>();
-	public FakeAppRegistryService() throws Exception{
+	public SimpleRegistryService() throws Exception{
 		AppRegistration appRegistration = new AppRegistration();
 		appRegistration.setName("timestamp");
 		appRegistration.setUri(new URI("docker:springcloudtask/timestamp-task:2.1.0.RELEASE"));
@@ -39,6 +39,16 @@ public class FakeAppRegistryService implements AppRegistryService {
 		appRegistration.setName("argo-task");
 		appRegistration.setUri(new URI("docker:cppwfs/argotask:1.0.0.BUILD-SNAPSHOT"));
 		registrations.put("argo-task", appRegistration);
+		appRegistration = new AppRegistration();
+		appRegistration.setUri(new URI("docker:springcloudtask/timestamp-task:2.1.0.RELEASE"));
+		registrations.put("handle-fail-task", appRegistration);
+		appRegistration = new AppRegistration();
+		appRegistration.setUri(new URI("docker:springcloudtask/timestamp-task:2.1.0.RELEASE"));
+		registrations.put("handle-success-task", appRegistration);
+		appRegistration = new AppRegistration();
+		appRegistration.setUri(new URI("docker:springcloudtask/timestamp-task:2.1.0.RELEASE"));
+		registrations.put("another-timestamp", appRegistration);
+
 	}
 
 	@Override

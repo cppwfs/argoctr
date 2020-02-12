@@ -1,23 +1,286 @@
-= CTR Argo Demo
+= Composed Task Argo Runner
 
-A basic boot application that generates and launches the Argo yaml for a composed task DSL.   The DSL is based on the one used by Spring Cloud Data Flow.
+A basic boot application that generates and launches the Argo specification for a
+composed task DSL graph.   The DSL is based on the one used by Spring Cloud Data Flow.
 
-Code is still in exploration phase (and thus really dirty).
-Currently supports the following structures:
 
+Supports:
+
+* Single Task Execution
 * Conditional Executions
 * Transitions
 
-== Building
+TODO:
+
+* Splits
+* Transitions in splits
+* Support loops
+
+== Installing Argo
+To install Argo  follow the instructions here:
+
+. Verify requirement
+    * Kubernetes 1.9 or later
+    * kubectl
+    * Have a kubeconfig file (default location is ~/.kube/config)
+. Install the argo command line tool as shown
+.. `brew install argoproj/tap/argo`
+. Install the argo controller as follows from the project home directory:
+.. `kubectl create namespace argo`
+..  `kubectl apply -n argo -f install.yaml`
+. For demo purposes we will grant `default` `Service Account` admin privileges.
+.. `kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default`
+
+NOTE: We are using our own instructions instead of the ones provided by Argo, because in 2.4 there was a mistake in their instructions.
+
+== Building Composed Task Argo Runner
 
 ```
 ./mvnw clean package
 ```
 
 == Executing
-Currently the application just for exercising the various aspects of Argo.
-Uncomment the line you wish to execute from the `quickDSLDemo` method in the `ArgoctrApplication` class.
+This demo will parse the composed task graph provided and create the Argo yaml specification required to execute the workflow.
 
 ```
-java -jar target/argoctr-0.0.1-SNAPSHOT.jar
+java -jar target/argoctr-1.0.0.BUILD-SNAPSHOT --workFlowName=<name of workflow> --graph=<dsl> --deployWorkflow=<true/false>
 ```
+
+* workFlowName - the prefix used by Argo to generate the pods
+* graph - The DSL for the composed task
+* deployWorkFlow - If `true` print out the workflow specification and submit it to your argo instance.   If `false` just display the workflow specification.
+
+
+== Example Workflows
+
+These examples assume you are in the project home directory.
+
+=== Simple Task Execution
+This example will launch a single ephemeral application (timestamp) that will print out a timestamp and then terminate.
+The composed task graph looks like:
+```
+timestamp
+```
+i.e. Simply the name of the task we want to launch.
+
+NOTE: The composed task runner has a Simple registry service that resolves a name like `timestamp` to the URI of the resource it needs.  In this case its `docker:springcloudtask/timestamp-task:2.1.0.RELEASE`.
+
+==== Launch the workflow
+
+To launch this application from the command line execute the following:
+```
+java -jar target/argoctr-1.0.0.BUILD-SNAPSHOT.jar --workFlowName=simpletaskexec --graph="timestamp"
+```
+
+To view the result from the command line execute the following commands:
+To see the pods:
+```
+kubectl get pods
+```
+And you should see a result like:
+```
+NAME                              READY   STATUS      RESTARTS   AGE
+simpletaskexec-2v68z-1349966444   0/2     Completed   0          12s
+```
+
+==== To see the argo workflow:
+
+First get a list of the workflows
+```
+argo list
+```
+You should see a result like:
+```
+NAME                   STATUS      AGE   DURATION   PRIORITY
+simpletaskexec-2v68z   Succeeded   5m    7s         0
+```
+
+Now retrieve the workflow by executing a `argo get <name>`:
+```
+argo get simpletaskexec-2v68z
+```
+And you should see a result like:
+```
+Name:                simpletaskexec-2v68z
+Namespace:           default
+ServiceAccount:      default
+Status:              Succeeded
+Created:             Wed Feb 12 10:59:40 -0500 (4 minutes ago)
+Started:             Wed Feb 12 10:59:40 -0500 (4 minutes ago)
+Finished:            Wed Feb 12 10:59:47 -0500 (4 minutes ago)
+Duration:            7 seconds
+
+STEP                                     PODNAME                          DURATION  MESSAGE
+ ✔ simpletaskexec-2v68z (composed-task)
+ └-✔ timestamp (timestamp)               simpletaskexec-2v68z-1349966444  7s
+```
+
+
+=== Conditional Execution
+This example will launch 2 applications sequentially.  First the `timestamp` application will be launched and upon successful completion of `timestamp` then the `another-timestamp` will be launched.
+The composed task graph looks like:
+```
+timestamp && another-timestamp
+```
+
+NOTE: The composed task runner has a Simple registry service that resolves a name like `timestamp` to the URI of the resource it needs.  In this case its `docker:springcloudtask/timestamp-task:2.1.0.RELEASE`.
+
+==== Launch the workflow
+
+To launch this application from the command line execute the following:
+```
+java -jar target/argoctr-1.0.0.BUILD-SNAPSHOT.jar --workFlowName=conditional-exec --graph="timestamp && another-timestamp"
+```
+
+To view the result from the command line execute the following commands:
+To see the pods:
+```
+kubectl get pods
+```
+And you should see a result like:
+```
+NAME                                READY   STATUS      RESTARTS   AGE
+conditional-exec-9pgwd-1464111357   0/2     Completed   0          21s
+conditional-exec-9pgwd-4093616615   0/2     Completed   0          14s
+```
+
+==== To see the argo workflow:
+
+First get a list of the workflows
+```
+argo list
+```
+You should see a result like:
+```
+NAME                     STATUS      AGE   DURATION   PRIORITY
+conditional-exec-9pgwd   Succeeded   40s   14s        0
+```
+
+Now retrieve the workflow by executing a `argo get <name>`:
+```
+argo get conditional-exec-9pgwd
+```
+And you should see a result like:
+```
+Name:                conditional-exec-9pgwd
+Namespace:           default
+ServiceAccount:      default
+Status:              Succeeded
+Created:             Wed Feb 12 14:06:50 -0500 (1 minute ago)
+Started:             Wed Feb 12 14:06:50 -0500 (1 minute ago)
+Finished:            Wed Feb 12 14:07:04 -0500 (48 seconds ago)
+Duration:            14 seconds
+
+STEP                                        PODNAME                            DURATION  MESSAGE
+ ✔ conditional-exec-9pgwd (composed-task)
+ ├-✔ timestamp (timestamp)                  conditional-exec-9pgwd-1464111357  7s
+ └-✔ another-timestamp (another-timestamp)  conditional-exec-9pgwd-4093616615  6s
+```
+
+=== Transition Execution
+This example will launch a 4 tasks (applications).  To demonstrate the transition this graph will use the argo-task application.  The argo-task app allows a user to specify the exit message to be used.   This exit message will determine which app will be launched next.
+The composed task graph looks like:
+```
+first-app: timestamp && argo-task-b: argo-task --message=FAILED 'FAILED' ->  handle-fail-task 'COMPLETED' -> handle-success-task
+```
+
+NOTE: The composed task runner has a Simple registry service that resolves a name like `timestamp` to the URI of the resource it needs.  In this case its `docker:springcloudtask/timestamp-task:2.1.0.RELEASE`.
+
+==== Launch the workflow
+
+To launch this application from the command line execute the following:
+```
+java -jar target/argoctr-1.0.0.BUILD-SNAPSHOT.jar --workFlowName=transition-flow --graph="first-app: timestamp && argo-task-b: argo-task --message=FAILED 'FAILED' ->  handle-fail-task 'COMPLETED' -> handle-success-task"
+```
+
+To view the result from the command line execute the following commands:
+To see the pods:
+```
+kubectl get pods
+```
+And you should see a result like:
+```
+NAME                               READY   STATUS      RESTARTS   AGE
+transition-flow-svdgq-2315386002   0/2     Completed   0          62m
+transition-flow-svdgq-3974387605   0/2     Completed   0          62m
+transition-flow-svdgq-4196481971   0/2     Completed   0          62m
+```
+
+==== To see the argo workflow:
+
+First get a list of the workflows
+```
+argo list
+```
+You should see a result like:
+```
+NAME                   STATUS      AGE   DURATION   PRIORITY
+transition-flow-svdgq   Succeeded   1h    20s        0
+```
+
+Now retrieve the workflow by executing a `argo get <name>`:
+```
+argo get transition-flow-svdgq
+```
+And you should see a result like:
+```
+Name:                transition-flow-svdgq
+Namespace:           default
+ServiceAccount:      default
+Status:              Succeeded
+Created:             Wed Feb 12 12:38:45 -0500 (1 hour ago)
+Started:             Wed Feb 12 12:38:45 -0500 (1 hour ago)
+Finished:            Wed Feb 12 12:39:05 -0500 (1 hour ago)
+Duration:            20 seconds
+
+STEP                                            PODNAME                           DURATION  MESSAGE
+ ✔ transition-flow-svdgq (composed-task)
+ ├-✔ first-app (timestamp)                      transition-flow-svdgq-3974387605  6s
+ ├-✔ argo-task-b (argo-task)                    transition-flow-svdgq-4196481971  5s
+ ├-✔ handle-fail-task (handle-fail-task)        transition-flow-svdgq-2315386002  7s
+ └-○ handle-success-task (handle-success-task)                                              when 'FAILED == COMPLETED' evaluated false
+```
+
+==== Launch the workflow to test the other path
+
+==== Launch the workflow
+
+To launch this application from the command line execute the following:
+```
+java -jar target/argoctr-1.0.0.BUILD-SNAPSHOT.jar --workFlowName=transition-flow --graph="first-app: timestamp && argo-task-b: argo-task --message=COMPLETED 'FAILED' ->  handle-fail-task 'COMPLETED' -> handle-success-task"
+```
+
+First get a list of the workflows
+```
+argo list
+```
+You should see a result like:
+```
+NAME                    STATUS      AGE   DURATION   PRIORITY
+transition-flow-j59lf   Succeeded   23s   22s        0
+transition-flow-svdgq   Succeeded   1h    20s        0
+```
+
+Now retrieve the workflow by executing a `argo get <name>`:
+```
+argo get transition-flow-j59lf
+```
+And you should see a result like:
+```
+Name:                transition-flow-j59lf
+Namespace:           default
+ServiceAccount:      default
+Status:              Succeeded
+Created:             Wed Feb 12 13:46:05 -0500 (1 minute ago)
+Started:             Wed Feb 12 13:46:05 -0500 (1 minute ago)
+Finished:            Wed Feb 12 13:46:27 -0500 (39 seconds ago)
+Duration:            22 seconds
+
+STEP                                            PODNAME                           DURATION  MESSAGE
+ ✔ transition-flow-j59lf (composed-task)
+ ├-✔ first-app (timestamp)                      transition-flow-j59lf-1205783144  7s
+ ├-✔ argo-task-b (argo-task)                    transition-flow-j59lf-3414911962  7s
+ ├-○ handle-fail-task (handle-fail-task)                                                    when 'COMPLETED == FAILED' evaluated false
+ └-✔ handle-success-task (handle-success-task)  transition-flow-j59lf-2295928234  6s
+```
+

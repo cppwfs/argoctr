@@ -25,6 +25,8 @@ public class ComposedTaskProperties {
 
 	private String workFlowName;
 
+	private boolean deployWorkflow = true;
+
 	public String getGraph() {
 		return graph;
 	}
@@ -39,5 +41,13 @@ public class ComposedTaskProperties {
 
 	public void setWorkFlowName(String workFlowName) {
 		this.workFlowName = workFlowName;
+	}
+
+	public boolean isDeployWorkflow() {
+		return deployWorkflow;
+	}
+
+	public void setDeployWorkflow(boolean deployWorkflow) {
+		this.deployWorkflow = deployWorkflow;
 	}
 }
