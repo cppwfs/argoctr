@@ -16,8 +16,9 @@
 
 package io.spring.argoctr.configuration;
 
+import io.spring.argoctr.ComposedTaskApplicationRunner;
+import io.spring.argoctr.ComposedTaskProperties;
 import io.spring.argoctr.FakeAppRegistryService;
-import io.spring.argoctr.FixedWorkFlows;
 import io.spring.argoctr.ParsedWorkFlows;
 
 import org.springframework.cloud.dataflow.registry.service.AppRegistryService;
@@ -34,12 +35,13 @@ public class WorkflowConfiguration {
 	}
 
 	@Bean
-	public FixedWorkFlows fixedWorkFlows() {
-		return new FixedWorkFlows();
-	}
-
-	@Bean
 	public ParsedWorkFlows parsedWorkFlows(AppRegistryService appRegistryService) {
 		return new ParsedWorkFlows(appRegistryService);
 	}
+
+	@Bean
+	public ComposedTaskApplicationRunner argoApplicationRunner(ComposedTaskProperties properties, ParsedWorkFlows parsedWorkFlows) {
+		return new ComposedTaskApplicationRunner(properties, parsedWorkFlows);
+	}
+
 }
