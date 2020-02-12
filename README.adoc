@@ -40,13 +40,13 @@ NOTE: We are using our own instructions instead of the ones provided by Argo, be
 ```
 
 == Executing
-This demo will parse the composed task graph provided and create the Argo yaml specification required to execute the workflow.
+This demo will parse the composed task graph provided and create the workflow specification yaml required to execute the workflow.
 
 ```
 java -jar target/argoctr-1.0.0.BUILD-SNAPSHOT --workFlowName=<name of workflow> --graph=<dsl> --deployWorkflow=<true/false>
 ```
 
-* workFlowName - the prefix used by Argo to generate the pods
+* workFlowName - the prefix used by Argo for the names of the generated the pods
 * graph - The DSL for the composed task
 * deployWorkFlow - If `true` print out the workflow specification and submit it to your argo instance.   If `false` just display the workflow specification.
 
@@ -67,12 +67,12 @@ NOTE: The composed task runner has a Simple registry service that resolves a nam
 
 ==== Launch the workflow
 
-To launch this application from the command line execute the following:
+To launch this application from the command line, execute the following:
 ```
 java -jar target/argoctr-1.0.0.BUILD-SNAPSHOT.jar --workFlowName=simpletaskexec --graph="timestamp"
 ```
 
-To view the result from the command line execute the following commands:
+To view the result from the command line, execute the following commands:
 To see the pods:
 ```
 kubectl get pods
@@ -127,12 +127,12 @@ NOTE: The composed task runner has a Simple registry service that resolves a nam
 
 ==== Launch the workflow
 
-To launch this application from the command line execute the following:
+To launch this application from the command line, execute the following:
 ```
 java -jar target/argoctr-1.0.0.BUILD-SNAPSHOT.jar --workFlowName=conditional-exec --graph="timestamp && another-timestamp"
 ```
 
-To view the result from the command line execute the following commands:
+To view the result from the command line, execute the following commands:
 To see the pods:
 ```
 kubectl get pods
@@ -178,7 +178,7 @@ STEP                                        PODNAME                            D
 ```
 
 === Transition Execution
-This example will launch a 4 tasks (applications).  To demonstrate the transition this graph will use the argo-task application.  The argo-task app allows a user to specify the exit message to be used.   This exit message will determine which app will be launched next.
+This example will show how to execute branches in a workflow.  To demonstrate the transition this graph will use the `argo-task` application.  The `argo-task` app allows a user to specify the exit message to be used.   This exit message will determine which app will be launched next.
 The composed task graph looks like:
 ```
 first-app: timestamp && argo-task-b: argo-task --message=FAILED 'FAILED' ->  handle-fail-task 'COMPLETED' -> handle-success-task
@@ -188,12 +188,12 @@ NOTE: The composed task runner has a Simple registry service that resolves a nam
 
 ==== Launch the workflow
 
-To launch this application from the command line execute the following:
+To launch this application from the command line, execute the following:
 ```
 java -jar target/argoctr-1.0.0.BUILD-SNAPSHOT.jar --workFlowName=transition-flow --graph="first-app: timestamp && argo-task-b: argo-task --message=FAILED 'FAILED' ->  handle-fail-task 'COMPLETED' -> handle-success-task"
 ```
 
-To view the result from the command line execute the following commands:
+To view the result from the command line, execute the following commands:
 To see the pods:
 ```
 kubectl get pods
@@ -245,7 +245,7 @@ STEP                                            PODNAME                         
 
 ==== Launch the workflow
 
-To launch this application from the command line execute the following:
+To launch this application from the command line, execute the following:
 ```
 java -jar target/argoctr-1.0.0.BUILD-SNAPSHOT.jar --workFlowName=transition-flow --graph="first-app: timestamp && argo-task-b: argo-task --message=COMPLETED 'FAILED' ->  handle-fail-task 'COMPLETED' -> handle-success-task"
 ```
