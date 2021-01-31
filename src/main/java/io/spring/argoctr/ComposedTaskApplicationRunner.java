@@ -72,7 +72,7 @@ public class ComposedTaskApplicationRunner implements ApplicationRunner {
 		CustomObjectsApi apiInstance = new CustomObjectsApi();
 		Object result = null;
 		try {
-			result = apiInstance.createNamespacedCustomObject("argoproj.io", "v1alpha1", "default", "workflows", workflow, "true");
+			result = apiInstance.createNamespacedCustomObject("argoproj.io", "v1alpha1", "default", "workflows", workflow, "true", "All", "CTR");
 		}
 		catch (ApiException e) {
 			e.printStackTrace();

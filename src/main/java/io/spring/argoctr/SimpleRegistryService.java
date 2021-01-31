@@ -97,6 +97,11 @@ public class SimpleRegistryService implements AppRegistryService {
 	}
 
 	@Override
+	public Page<AppRegistration> findAllByTypeAndNameIsLikeAndDefaultVersionIsTrue(ApplicationType type, String name, Pageable pageable) {
+		return null;
+	}
+
+	@Override
 	public boolean appExist(String name, ApplicationType type) {
 		return false;
 	}
@@ -109,6 +114,11 @@ public class SimpleRegistryService implements AppRegistryService {
 	@Override
 	public AppRegistration find(String name, ApplicationType type) {
 		return this.registrations.get(name);
+	}
+
+	@Override
+	public AppRegistration find(String name, ApplicationType type, String version) {
+		return null;
 	}
 
 	@Override
